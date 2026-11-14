@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "knoxified-partners",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "vars": {
+    "SUPABASE_URL": "https://elpljgrwrzaugsunoidf.supabase.co",
+    "MAIN_SITE_URL": "https://knoxified.org"
+  }
+}
