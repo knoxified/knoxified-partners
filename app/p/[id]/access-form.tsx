@@ -8,18 +8,15 @@ export function AccessForm({ partnerId, defaultEmail }: { partnerId: string; def
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="partnerId" value={partnerId} />
-      <input name="email" type="email" required defaultValue={defaultEmail}
-        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
-      <button disabled={pending}
-        className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 disabled:opacity-60">
-        {pending ? "Creating…" : "Create sign-in link"}
-      </button>
-      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input name="email" type="email" required defaultValue={defaultEmail} className="input" />
+        <button disabled={pending} className="btn btn-primary shrink-0">{pending ? "Creating…" : "Create sign-in link"}</button>
+      </div>
+      {state.error && <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{state.error}</p>}
       {state.link && (
-        <div className="rounded-lg border border-slate-700 bg-slate-950 p-3">
+        <div className="rounded-xl border border-slate-700/60 bg-slate-950/60 p-3">
           <p className="mb-2 text-xs text-slate-400">Send this to the affiliate yourself. It works once and expires soon (about an hour by default).</p>
-          <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()}
-            className="w-full rounded bg-slate-900 px-2 py-1.5 font-mono text-xs text-slate-200" />
+          <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()} className="input font-mono !text-xs" />
         </div>
       )}
     </form>

@@ -1,23 +1,28 @@
 import Link from "next/link";
 
-export function Shell({
-  email, title, subtitle, children, showAll,
-}: { email: string; title: string; subtitle?: string; children: React.ReactNode; showAll?: boolean }) {
+export function Shell({ email, role, children }: { email: string; role: "admin" | "partner" | "none"; children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <header className="mb-8 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-semibold tracking-wide text-emerald-400">KNOXIFIED PARTNERS</span>
-          {showAll && <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">← All affiliates</Link>}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-50 border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="group flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" className="h-8 w-8 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-opacity group-hover:opacity-100" />
+            <span className="text-xl font-bold tracking-tight text-slate-50">Knoxified</span>
+            <span className="rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-xs font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-400/25">
+              {role === "admin" ? "Admin console" : "Partners"}
+            </span>
+          </Link>
+          <form action="/signout" method="post" className="flex items-center gap-3">
+            <span className="hidden text-sm text-slate-400 sm:inline">{email}</span>
+            <button className="btn btn-ghost !py-1.5">Sign out</button>
+          </form>
         </div>
-        <form action="/signout" method="post" className="flex items-center gap-3 text-sm">
-          <span className="hidden text-slate-500 sm:inline">{email}</span>
-          <button className="rounded-lg border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-900">Sign out</button>
-        </form>
       </header>
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
-      <div className="mt-6">{children}</div>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        © {new Date().getFullYear()} Knoxified · Partner program
+      </footer>
     </div>
   );
 }

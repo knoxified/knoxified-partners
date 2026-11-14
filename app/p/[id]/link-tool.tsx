@@ -19,27 +19,21 @@ export function LinkTool({ base, code }: { base: string; code: string }) {
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1600);
     } catch {
-      // Clipboard blocked: the field below is selectable.
+      // Clipboard blocked: the field is selectable.
     }
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Source (optional), e.g. youtube"
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
-        <input value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="Campaign (optional), e.g. march-video"
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Source (optional), e.g. youtube" className="input" />
+        <input value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="Campaign (optional), e.g. march-video" className="input" />
       </div>
-      <div className="flex gap-2">
-        <input readOnly value={link} onFocus={(e) => e.currentTarget.select()}
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-200" />
-        <button onClick={copy} type="button"
-          className="shrink-0 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400">
-          {copied ? "Copied" : "Copy"}
-        </button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="input font-mono !text-xs" />
+        <button onClick={copy} type="button" className="btn btn-primary shrink-0">{copied ? "Copied ✓" : "Copy link"}</button>
       </div>
     </div>
   );
