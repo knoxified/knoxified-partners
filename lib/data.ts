@@ -77,3 +77,37 @@ export async function getPayments(partnerId: string): Promise<PaymentRow[]> {
   if (error) throw new Error(error.message);
   return (data ?? []).map((r: any) => normaliseRow(r, ["commission_base", "rate_percent", "commission_amount"]));
 }
+
+// ---------------------------------------------------------------------------
+// Agreement, payout details and settings (service role; callers must authorise first)
+// ---------------------------------------------------------------------------
+export type AgreementMeta = {
+  id: string; terms_version: string; record_sha256: string; signed_at: string;
+  tsa_status: "pending" | "stamped" | "failed"; tsa_url: string | null; tsa_stamped_at: string | null; signer_name: string;
+};
+
+export async function getAgreementMeta(partnerId: string): Promise<AgreementMeta | null> {
+  const { data } = await adminClient()
+    .from("partner_agreements")
+    .select("id, terms_version, record_sha256, signed_at, tsa_status, tsa_url, tsa_stamped_at, signer_name")
+    .eq("partner_id", partnerId)
+    .order("signed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as AgreementMeta | null) ?? null;
+}
+
+export type PayoutMeta = { currency: string; method: string; country: string | null; hint: string | null; updated_at: string };
+export async function getPayoutMeta(partnerId: string): Promise<PayoutMeta | null> {
+  const { data } = await adminClient()
+    .from("partner_payout_details")
+    .select("currency, method, country, hint, updated_at")
+    .eq("partner_id", partnerId)
+    .maybeSingle();
+  return (data as PayoutMeta | null) ?? null;
+}
+
+export async function getSetting<T>(key: string): Promise<T | null> {
+  const { data } = await adminClient().from("portal_settings").select("value").eq("key", key).maybeSingle();
+  return (data?.value as T | undefined) ?? null;
+}

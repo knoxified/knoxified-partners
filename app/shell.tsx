@@ -13,6 +13,13 @@ export function Shell({ email, role, children }: { email: string; role: "admin" 
               {role === "admin" ? "Admin console" : "Partners"}
             </span>
           </Link>
+          {role === "admin" && (
+            <nav className="hidden items-center gap-1 text-sm md:flex">
+              {[["/", "Overview"], ["/admin/invites", "Invites"], ["/admin/payouts", "Payouts"], ["/admin/settings", "Settings"]].map(([href, label]) => (
+                <Link key={href} href={href} className="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800/70 hover:text-white">{label}</Link>
+              ))}
+            </nav>
+          )}
           <form action="/signout" method="post" className="flex items-center gap-3">
             <span className="hidden text-sm text-slate-400 sm:inline">{email}</span>
             <button className="btn btn-ghost !py-1.5">Sign out</button>

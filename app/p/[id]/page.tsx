@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { canView, getViewer } from "@/lib/viewer";
-import { getCustomers, getPartner, getPayments, type PaymentRow } from "@/lib/data";
+import { getAgreementMeta, getCustomers, getPartner, getPayments, getPayoutMeta, type PaymentRow } from "@/lib/data";
+import { milestones, nextGoal } from "@/lib/milestones";
 import { day, money, paymentStatus } from "@/lib/format";
 import { Pill, Section, Stat, TableCard } from "@/components/ui";
 import { Shell } from "../../shell";
 import { LinkTool } from "./link-tool";
 import { AccessForm } from "./access-form";
+import { PayoutForm } from "./payout-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function PartnerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PartnerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ welcome?: string }> }) {
   const { id } = await params;
+  const { welcome } = await searchParams;
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
   if (!canView(viewer, id)) notFound();
@@ -19,7 +22,10 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
   const isAdmin = viewer.role === "admin";
   const partner = await getPartner(id);
   if (!partner) notFound();
-  const [customers, payments] = await Promise.all([getCustomers(id, isAdmin), getPayments(id)]);
+  const [customers, payments, agreement, payout] = await Promise.all([getCustomers(id, isAdmin), getPayments(id), getAgreementMeta(id), getPayoutMeta(id)]);
+  const isOwner = viewer.role === "partner";
+  const goal = nextGoal(partner);
+  const badges = milestones(partner);
 
   const cur = partner.currency;
   const nextPayout = payments.filter(
@@ -29,6 +35,15 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
 
   return (
     <Shell email={viewer.email} role={viewer.role}>
+      {welcome && isOwner && (
+        <div className="glow-border mb-6">
+          <div className="glow-inner p-5">
+            <div className="text-lg font-semibold">🎉 Welcome aboard, {partner.name.split(" ")[0]}. You&apos;re in.</div>
+            <p className="mt-1 text-sm text-slate-400">Your agreement is signed and your link is live below. Add your payout details so your first commission can be paid, and check your email for your signed copy.</p>
+          </div>
+        </div>
+      )}
+
       {isAdmin && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3">
           <p className="text-sm text-cyan-100">
@@ -70,6 +85,24 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
         <Stat label="Paid to date" value={money(partner.paid_to_date, cur)} tone="green" />
       </div>
 
+      <Section title="Your progress" hint="Small wins, tracked automatically.">
+        <div className="card p-5">
+          {goal ? (
+            <div className="mb-4">
+              <div className="mb-1.5 flex justify-between text-sm"><span className="font-medium">Next goal: {goal.label}</span><span className="text-slate-400">{goal.remaining}</span></div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500" style={{ width: `${Math.max(4, Math.round(goal.progress * 100))}%` }} /></div>
+            </div>
+          ) : <p className="mb-4 text-sm text-emerald-300">You have reached every milestone so far. More are coming.</p>}
+          <div className="flex flex-wrap gap-2">
+            {badges.map((m) => (
+              <span key={m.id} className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${m.achieved ? "bg-emerald-500/15 text-emerald-300 ring-emerald-400/25" : "bg-slate-800/60 text-slate-500 ring-slate-700"}`}>
+                {m.achieved ? "✓ " : ""}{m.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Section>
+
       {nextPayout.length > 0 && (
         <Section title={`Scheduled for ${day(partner.next_payout_date)}`} hint="These commissions are included in your next payout.">
           <PaymentsTable rows={nextPayout} />
@@ -109,6 +142,26 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
         <PaymentsTable rows={payments} empty="Commissions appear here after a referred customer pays." />
       </Section>
 
+      {isOwner && (
+        <Section title="Payout details" hint={payout ? "Your payout details are saved." : "Add these so we can pay you on the 15th."}>
+          <div className="card p-5">
+            <PayoutForm partnerId={id} saved={payout ? { currency: payout.currency, hint: payout.hint, updated: day(payout.updated_at) } : null} />
+          </div>
+        </Section>
+      )}
+
+      {agreement && (
+        <Section title="Your agreement">
+          <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+            <div className="text-sm text-slate-300">
+              Signed {day(agreement.signed_at)} · Terms version {agreement.terms_version}
+              <div className="mt-0.5 text-xs text-slate-500">Fingerprint {agreement.record_sha256.slice(0, 16)}… · Timestamp {agreement.tsa_status === "stamped" ? "verified" : "in progress"}</div>
+            </div>
+            <Link href={`/p/${id}/agreement`} className="btn btn-ghost">View and download</Link>
+          </div>
+        </Section>
+      )}
+
       <Section title="Your referral link" hint="The first link a visitor clicks gets the credit for 60 days. Add a source or campaign to see which posts convert.">
         <div className="card p-5"><LinkTool base={mainSite} code={partner.ref_code} /></div>
       </Section>
@@ -118,6 +171,11 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
           <div className="mb-4 flex items-center gap-2">
             <Pill tone="amber">Admin only</Pill>
             <span className="text-sm text-slate-400">Affiliates do not see this section.</span>
+          </div>
+
+          <div className="mb-6 grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
+            <div>Agreement: {agreement ? <Link href={`/p/${id}/agreement`} className="text-cyan-300 hover:underline">signed {day(agreement.signed_at)} (v{agreement.terms_version}, timestamp {agreement.tsa_status})</Link> : <span className="text-amber-300">none on file</span>}</div>
+            <div>Payout details: {payout ? <span>{payout.currency} · {payout.country} · updated {day(payout.updated_at)}</span> : <span className="text-amber-300">not added yet</span>}</div>
           </div>
 
           <h3 className="font-semibold">Sign-in access</h3>
