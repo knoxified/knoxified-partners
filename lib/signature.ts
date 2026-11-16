@@ -51,7 +51,7 @@ export type AffiliateSignature =
 export type VisibleSignature = Exclude<AffiliateSignature, { method: "none" }>;
 
 const PNG_B64_PREFIX = "iVBORw0KGgo"; // base64 of the 8-byte PNG signature
-const PHOTO_MAX_B64 = 150_000;
+const PHOTO_MAX_B64 = 80_000;
 
 // The browser re-encodes the photo to a small transparent PNG. Here we only accept exactly that:
 // a PNG of sensible size. It is embedded as an <img> data URI, which cannot run code.
@@ -74,8 +74,8 @@ export function sanitizePhotoB64(b64: unknown): string | null {
 
 export function sanitizePhotoDataUrl(input: unknown): string | null {
   if (typeof input !== "string") return null;
-  const m = /^data:image\/png;base64,(.+)$/.exec(input);
-  return m ? sanitizePhotoB64(m[1]) : null;
+  const prefix = "data:image/png;base64,";
+  return input.startsWith(prefix) ? sanitizePhotoB64(input.slice(prefix.length)) : null;
 }
 
 export function photoToImg(png: string, height = 90): string {

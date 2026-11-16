@@ -1,9 +1,12 @@
-// Browser-only. Turns a photo of a signature on paper into a small transparent PNG (dark ink, no
-// paper). The background is estimated block by block so shadows and uneven light do not matter.
+import { extractInk } from "@/lib/ink";
+
+// Browser-only. Turns a photo of a signature on paper into a small transparent PNG: dark ink only,
+// cropped tight and scaled to fill the picture. The heavy maths lives in lib/ink.ts.
 // The server re-checks the result, so nothing here is trusted.
 
-const MAX_SIDE = 1000;
-const BLOCK = 32;
+const MAX_SIDE = 900;
+const OUT_W = 480;
+const OUT_H = 170;
 
 export async function photoToSignaturePng(file: File): Promise<string> {
   let bmp: ImageBitmap;
@@ -21,85 +24,17 @@ export async function photoToSignaturePng(file: File): Promise<string> {
   const sctx = src.getContext("2d", { willReadFrequently: true });
   if (!sctx) throw new Error("This browser cannot process images.");
   sctx.drawImage(bmp, 0, 0, w, h);
-  const { data } = sctx.getImageData(0, 0, w, h);
+  const res = extractInk(sctx.getImageData(0, 0, w, h).data, w, h);
+  if ("error" in res) throw new Error(res.error);
 
-  const lum = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) lum[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+  // Tight crop with a small margin, then scale to fill the output box.
+  const { x0, y0, x1, y1 } = res.box;
+  const padX = Math.round((x1 - x0) * 0.04) + 3;
+  const padY = Math.round((y1 - y0) * 0.1) + 3;
+  const cx0 = Math.max(0, x0 - padX), cy0 = Math.max(0, y0 - padY);
+  const cx1 = Math.min(w - 1, x1 + padX), cy1 = Math.min(h - 1, y1 + padY);
+  const cw = cx1 - cx0 + 1, ch = cy1 - cy0 + 1;
 
-  // Paper brightness per block = a high percentile, so ink inside a block does not darken it.
-  const bw = Math.ceil(w / BLOCK);
-  const bh = Math.ceil(h / BLOCK);
-  const bg = new Float32Array(bw * bh);
-  for (let by = 0; by < bh; by++) {
-    for (let bx = 0; bx < bw; bx++) {
-      const hist = new Uint32Array(256);
-      let n = 0;
-      for (let y = by * BLOCK; y < Math.min(h, (by + 1) * BLOCK); y++)
-        for (let x = bx * BLOCK; x < Math.min(w, (bx + 1) * BLOCK); x++) {
-          hist[Math.min(255, Math.round(lum[y * w + x]))]++;
-          n++;
-        }
-      let acc = 0;
-      let v = 255;
-      for (let k = 0; k < 256; k++) {
-        acc += hist[k];
-        if (acc >= n * 0.9) {
-          v = k;
-          break;
-        }
-      }
-      bg[by * bw + bx] = Math.max(v, 60);
-    }
-  }
-  const bgAt = (x: number, y: number) => {
-    const fx = Math.min(bw - 1, Math.max(0, x / BLOCK - 0.5));
-    const fy = Math.min(bh - 1, Math.max(0, y / BLOCK - 0.5));
-    const x0 = Math.floor(fx), y0 = Math.floor(fy);
-    const x1 = Math.min(bw - 1, x0 + 1), y1 = Math.min(bh - 1, y0 + 1);
-    const tx = fx - x0, ty = fy - y0;
-    const a = bg[y0 * bw + x0] * (1 - tx) + bg[y0 * bw + x1] * tx;
-    const b = bg[y1 * bw + x0] * (1 - tx) + bg[y1 * bw + x1] * tx;
-    return a * (1 - ty) + b * ty;
-  };
-
-  const alpha = new Float32Array(w * h);
-  let ink = 0;
-  let minX = w, maxX = 0, minY = h, maxY = 0;
-  const xs: number[] = [];
-  const ys: number[] = [];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const ratio = lum[y * w + x] / bgAt(x, y);
-      const a = ratio >= 0.86 ? 0 : ratio <= 0.55 ? 1 : (0.86 - ratio) / 0.31;
-      alpha[y * w + x] = a;
-      if (a > 0.5) {
-        ink++;
-        xs.push(x);
-        ys.push(y);
-      }
-    }
-  }
-  const share = ink / (w * h);
-  if (share < 0.0004) throw new Error("We could not see a signature. Use a dark pen on plain white paper, in good light, and fill the frame.");
-  if (share > 0.3) throw new Error("The photo is too dark or busy. Try plain white paper in even light.");
-
-  xs.sort((a, b) => a - b);
-  ys.sort((a, b) => a - b);
-  minX = xs[Math.floor(xs.length * 0.005)];
-  maxX = xs[Math.floor(xs.length * 0.995)];
-  minY = ys[Math.floor(ys.length * 0.005)];
-  maxY = ys[Math.floor(ys.length * 0.995)];
-  const padX = Math.round((maxX - minX) * 0.05) + 4;
-  const padY = Math.round((maxY - minY) * 0.12) + 4;
-  const cx0 = Math.max(0, minX - padX), cx1 = Math.min(w - 1, maxX + padX);
-  const cy0 = Math.max(0, minY - padY), cy1 = Math.min(h - 1, maxY + padY);
-  const cw = cx1 - cx0 + 1;
-  const ch = cy1 - cy0 + 1;
-
-  const out = document.createElement("canvas");
-  const fit = Math.min(600 / cw, 220 / ch);
-  out.width = Math.max(120, Math.round(cw * fit));
-  out.height = Math.max(60, Math.round(ch * fit));
   const crop = document.createElement("canvas");
   crop.width = cw;
   crop.height = ch;
@@ -109,14 +44,19 @@ export async function photoToSignaturePng(file: File): Promise<string> {
     for (let x = 0; x < cw; x++) {
       const o = (y * cw + x) * 4;
       img.data[o] = 11; img.data[o + 1] = 18; img.data[o + 2] = 32;
-      img.data[o + 3] = Math.round(alpha[(cy0 + y) * w + (cx0 + x)] * 255);
+      img.data[o + 3] = res.alpha[(cy0 + y) * w + (cx0 + x)];
     }
   cctx.putImageData(img, 0, 0);
+
+  const fit = Math.min(OUT_W / cw, OUT_H / ch);
+  const dw = Math.max(1, Math.round(cw * fit)), dh = Math.max(1, Math.round(ch * fit));
+  const out = document.createElement("canvas");
+  out.width = Math.max(120, dw);
+  out.height = Math.max(60, dh);
   const octx = out.getContext("2d")!;
   octx.imageSmoothingQuality = "high";
-  const dw = Math.round(cw * fit), dh = Math.round(ch * fit);
   octx.drawImage(crop, Math.round((out.width - dw) / 2), Math.round((out.height - dh) / 2), dw, dh);
   const dataUrl = out.toDataURL("image/png");
-  if (dataUrl.length > 140_000) throw new Error("That signature is too detailed to save. Please retake it with a thicker pen.");
+  if (dataUrl.length > 60_000) throw new Error("That signature is too detailed to save. Please retake it with a thicker pen.");
   return dataUrl;
 }

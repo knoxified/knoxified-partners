@@ -10,9 +10,9 @@ export function fromHex(hex: string): Uint8Array {
   return out;
 }
 export function toB64(bytes: Uint8Array): string {
-  let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s);
+  const parts: string[] = [];
+  for (let i = 0; i < bytes.length; i += 0x8000) parts.push(String.fromCharCode(...bytes.subarray(i, i + 0x8000)));
+  return btoa(parts.join(""));
 }
 export function fromB64(b64: string): Uint8Array {
   const s = atob(b64);
