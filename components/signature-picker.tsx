@@ -24,8 +24,8 @@ function Qr({ url }: { url: string }) {
   return <div className="h-44 w-44 rounded-xl bg-white p-2 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true }) }} />;
 }
 
-export function SignaturePicker({ name, start, poll, onChange }: { name: string; start: Start; poll: Poll; onChange: (v: PickerValue) => void }) {
-  const [mode, setMode] = useState<Mode>("draw");
+export function SignaturePicker({ name, start, poll, onChange, modes = ["draw", "type", "paper"] }: { name: string; start: Start; poll: Poll; onChange: (v: PickerValue) => void; modes?: Mode[] }) {
+  const [mode, setMode] = useState<Mode>(modes[0]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [photo, setPhoto] = useState<{ preview: string; dataUrl?: string; handoff?: string } | null>(null);
   const [qr, setQr] = useState<{ token: string; url: string } | null>(null);
@@ -100,9 +100,9 @@ export function SignaturePicker({ name, start, poll, onChange }: { name: string;
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
-        {tab("draw", "Draw it")}
-        {tab("type", "Type it")}
-        {tab("paper", "Use my paper signature")}
+        {modes.includes("draw") && tab("draw", "Draw it")}
+        {modes.includes("type") && tab("type", "Type it")}
+        {modes.includes("paper") && tab("paper", "Use my paper signature")}
       </div>
 
       {mode === "draw" && (

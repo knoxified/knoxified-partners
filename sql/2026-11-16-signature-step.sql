@@ -42,3 +42,9 @@ language sql security definer set search_path = public as $$
   delete from public.portal_signature_handoffs where expires_at < now() - interval '1 day';
 $$;
 revoke all on function public.portal_purge_handoffs() from public, anon, authenticated;
+
+-- Added 2026-11-16 (second part): lets the admin settings page use the phone photo handoff too.
+alter table public.portal_signature_handoffs add column if not exists admin_user_id uuid;
+alter table public.portal_signature_handoffs drop constraint if exists portal_signature_handoffs_check;
+alter table public.portal_signature_handoffs drop constraint if exists portal_signature_handoffs_one_owner;
+alter table public.portal_signature_handoffs add constraint portal_signature_handoffs_one_owner check (num_nonnulls(invite_id, partner_id, admin_user_id) = 1);

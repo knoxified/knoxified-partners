@@ -6,7 +6,7 @@ import { sanitizePhotoB64 } from "@/lib/signature";
 // Hands a photographed signature from a phone to the computer the affiliate is signing on.
 // The QR link carries a random token; only its hash is stored. A token is single-use, expires in
 // 15 minutes, and is bound to one signing session (an invite while joining, or a partner later).
-export type HandoffScope = { inviteId?: string; partnerId?: string };
+export type HandoffScope = { inviteId?: string; partnerId?: string; adminUserId?: string };
 
 const TTL_MS = 15 * 60 * 1000;
 const hashToken = (token: string) => hmacHex(masterSecret() + ":handoff", token);
@@ -18,6 +18,7 @@ export async function createHandoff(scope: HandoffScope): Promise<string> {
     token_hash: await hashToken(token),
     invite_id: scope.inviteId ?? null,
     partner_id: scope.partnerId ?? null,
+    admin_user_id: scope.adminUserId ?? null,
     expires_at: new Date(Date.now() + TTL_MS).toISOString(),
   });
   if (error) throw new Error(error.message);
@@ -49,9 +50,10 @@ export async function putHandoffImage(token: string, png: unknown): Promise<"ok"
   return data && data.length > 0 ? "ok" : "closed";
 }
 
-function scopeMatches(row: { invite_id: string | null; partner_id: string | null }, scope: HandoffScope): boolean {
-  if (scope.inviteId) return row.invite_id === scope.inviteId && !row.partner_id;
-  if (scope.partnerId) return row.partner_id === scope.partnerId && !row.invite_id;
+function scopeMatches(row: { invite_id: string | null; partner_id: string | null; admin_user_id: string | null }, scope: HandoffScope): boolean {
+  if (scope.inviteId) return row.invite_id === scope.inviteId && !row.partner_id && !row.admin_user_id;
+  if (scope.partnerId) return row.partner_id === scope.partnerId && !row.invite_id && !row.admin_user_id;
+  if (scope.adminUserId) return row.admin_user_id === scope.adminUserId && !row.invite_id && !row.partner_id;
   return false;
 }
 
@@ -60,7 +62,7 @@ export async function readHandoff(token: string, scope: HandoffScope): Promise<{
   if (!validToken(token)) return { status: "expired" };
   const { data } = await adminClient()
     .from("portal_signature_handoffs")
-    .select("invite_id, partner_id, status, image_b64, expires_at")
+    .select("invite_id, partner_id, admin_user_id, status, image_b64, expires_at")
     .eq("token_hash", await hashToken(token))
     .maybeSingle();
   if (!data || !scopeMatches(data, scope) || data.status === "used" || new Date(data.expires_at).getTime() < Date.now()) return { status: "expired" };

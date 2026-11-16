@@ -8,7 +8,7 @@ import { normalizeInviteCode, randomDigits, toB64 } from "@/lib/crypto";
 import { inviteHash } from "@/lib/invite";
 import { checkCode, rateAllowed, sendCode } from "@/lib/otp";
 import { clearJoin, getJoin, setJoin } from "@/lib/joinsession";
-import { sanitizePhotoDataUrl, sanitizeStrokes, type AffiliateSignature } from "@/lib/signature";
+import { sanitizePhotoB64, sanitizePhotoDataUrl, sanitizeStrokes, type AffiliateSignature } from "@/lib/signature";
 import { consumeHandoff } from "@/lib/handoff";
 import { buildRecord, type KnoxSignature } from "@/lib/agreement";
 import { requestTimestamp } from "@/lib/tsa";
@@ -141,11 +141,12 @@ export async function signAgreement(formData: FormData) {
     userId = created!.user!.id;
   }
 
-  const saved = (await getSetting<{ name?: string; title?: string; strokes?: [number, number][][] | null }>("knoxified_signature")) ?? {};
+  const saved = (await getSetting<{ name?: string; title?: string; strokes?: [number, number][][] | null; png?: string | null }>("knoxified_signature")) ?? {};
   const knox: KnoxSignature = {
     name: saved.name || "Knox Favour",
     title: saved.title || "Founder, Knoxified",
     strokes: saved.strokes ? sanitizeStrokes(saved.strokes) : null,
+    png: saved.png ? sanitizePhotoB64(saved.png) : null,
   };
 
   const partnerId = crypto.randomUUID();

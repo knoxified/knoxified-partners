@@ -4,7 +4,7 @@ import { esc } from "@/lib/mail";
 import { photoToImg, strokesToSvg, type AffiliateSignature, type VisibleSignature } from "@/lib/signature";
 import { NOTICE_EMAIL, TERMS, TERMS_DATE, TERMS_VERSION, termsText } from "@/lib/terms";
 
-export type KnoxSignature = { name: string; title: string; strokes: import("@/lib/signature").Stroke[] | null };
+export type KnoxSignature = { name: string; title: string; strokes: import("@/lib/signature").Stroke[] | null; png?: string | null };
 
 export type RecordInput = {
   partnerId: string;
@@ -51,9 +51,11 @@ function clauseHtml(label: string, text: string): string {
 
 export async function buildRecord(i: RecordInput): Promise<{ html: string; json: Record<string, unknown>; sha256: string; termsSha256: string }> {
   const termsSha256 = await sha256Hex(termsText());
-  const knoxSig = i.knox.strokes
-    ? strokesToSvg(i.knox.strokes)
-    : `<div class="typed">${esc(i.knox.name)}</div>`;
+  const knoxSig = i.knox.png
+    ? photoToImg(i.knox.png)
+    : i.knox.strokes
+      ? strokesToSvg(i.knox.strokes)
+      : `<div class="typed">${esc(i.knox.name)}</div>`;
 
   const orderRows: Array<[string, string]> = [
     ["Knoxified", `Knoxified (business name), operated by ${i.knox.name}, an individual, until the business is carried on by a company`],
@@ -87,7 +89,7 @@ export async function buildRecord(i: RecordInput): Promise<{ html: string; json:
     ["Accepted and signed", `${fmtTime(i.signedAt)}; ${sigMethodText[i.signature.method]}`],
     ["Signer IP address", i.ip || "unknown"],
     ["Signer browser", i.userAgent.slice(0, 300) || "unknown"],
-    ["Knoxified signature", i.knox.strokes ? "Applied in advance (drawn)" : "Applied in advance (typed name)"],
+    ["Knoxified signature", i.knox.png ? "Applied in advance (photographed handwritten signature)" : i.knox.strokes ? "Applied in advance (drawn)" : "Applied in advance (typed name)"],
   ];
 
   const html = `<!doctype html>

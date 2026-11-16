@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/admin";
 import { getSetting } from "@/lib/data";
-import { strokesToSvg, sanitizeStrokes } from "@/lib/signature";
+import { strokesToSvg, sanitizeStrokes, sanitizePhotoB64, photoToImg } from "@/lib/signature";
 import { Pill, Section } from "@/components/ui";
 import { Shell } from "../../shell";
 import { SignatureForm } from "./signature-form";
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const viewer = await requireAdmin();
-  const sig = await getSetting<{ name?: string; title?: string; strokes?: [number, number][][] }>("knoxified_signature");
+  const sig = await getSetting<{ name?: string; title?: string; strokes?: [number, number][][] | null; png?: string | null }>("knoxified_signature");
+  const png = sig?.png ? sanitizePhotoB64(sig.png) : null;
   const strokes = sig?.strokes ? sanitizeStrokes(sig.strokes) : null;
   const notifyUrl = await getSetting<string>("notify_url");
   const notifySecret = await getSetting<string>("notify_secret");
@@ -20,7 +21,7 @@ export default async function SettingsPage() {
     ["Portal master secret", (process.env.PORTAL_SECRET ?? "").length >= 24, "Protects codes, cookies and bank details"],
     ["Notification secret", !!process.env.PORTAL_HOOK_SECRET, "Lets the database trigger emails"],
     ["Database notifications linked", !!notifyUrl && !!notifySecret, "notify_url and notify_secret saved in portal_settings"],
-    ["Your signature saved", !!strokes, "Drawn below; used on every agreement"],
+    ["Your signature saved", !!(strokes || png), "Drawn or photographed below; used on every agreement"],
   ];
 
   return (
@@ -39,10 +40,10 @@ export default async function SettingsPage() {
           </div>
         </Section>
 
-        <Section title="Your signature" hint="Signed in advance on every agreement. Draw it once.">
-          {strokes && (
+        <Section title="Your signature" hint="Signed in advance on every agreement. Draw it, or photograph one from paper. Do it once.">
+          {(png || strokes) && (
             <div className="card mb-4 flex items-center gap-4 p-4">
-              <div className="rounded-lg bg-white p-2" dangerouslySetInnerHTML={{ __html: strokesToSvg(strokes, 70) }} />
+              <div className="rounded-lg bg-white p-2" dangerouslySetInnerHTML={{ __html: png ? photoToImg(png, 70) : strokesToSvg(strokes!, 70) }} />
               <div className="text-sm text-slate-400">Current signature for <span className="text-slate-100">{sig?.name}</span>, {sig?.title}</div>
             </div>
           )}
