@@ -4,7 +4,8 @@ import { sanitizePhotoDataUrl } from "@/lib/signature";
 
 export const dynamic = "force-dynamic";
 
-// Receives the photographed signature from the affiliate's phone.
+// Receives the photographed signature from the affiliate's phone. No rate-limit lookup here on
+// purpose: the link token is random, single-use and short-lived, and the free plan has a tiny CPU budget.
 export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (Number(request.headers.get("content-length") || 0) > 120_000) return NextResponse.json({ error: "That image is too large." }, { status: 413 });

@@ -35,19 +35,22 @@ export async function handoffIsOpen(token: string): Promise<boolean> {
   return !!data && data.status === "waiting" && new Date(data.expires_at).getTime() > Date.now();
 }
 
-// Called from the phone.
+// Called from the phone. Kept deliberately light (one plain request to the database, no client
+// library) because the free Workers plan only allows about 10 ms of CPU per request.
 export async function putHandoffImage(token: string, png: unknown): Promise<"ok" | "invalid" | "closed"> {
   if (!validToken(token)) return "closed";
   const clean = sanitizePhotoB64(png);
   if (!clean) return "invalid";
-  const { data } = await adminClient()
-    .from("portal_signature_handoffs")
-    .update({ image_b64: clean, status: "received", received_at: new Date().toISOString() })
-    .eq("token_hash", await hashToken(token))
-    .eq("status", "waiting")
-    .gt("expires_at", new Date().toISOString())
-    .select("id");
-  return data && data.length > 0 ? "ok" : "closed";
+  const url = `${process.env.SUPABASE_URL}/rest/v1/portal_signature_handoffs?token_hash=eq.${await hashToken(token)}&status=eq.waiting&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&select=id`;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ image_b64: clean, status: "received", received_at: new Date().toISOString() }),
+  });
+  if (!res.ok) return "closed";
+  const rows = (await res.json()) as unknown[];
+  return rows.length > 0 ? "ok" : "closed";
 }
 
 function scopeMatches(row: { invite_id: string | null; partner_id: string | null; admin_user_id: string | null }, scope: HandoffScope): boolean {
