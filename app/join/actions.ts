@@ -8,7 +8,8 @@ import { normalizeInviteCode, randomDigits, toB64 } from "@/lib/crypto";
 import { inviteHash } from "@/lib/invite";
 import { checkCode, rateAllowed, sendCode } from "@/lib/otp";
 import { clearJoin, getJoin, setJoin } from "@/lib/joinsession";
-import { sanitizeStrokes } from "@/lib/signature";
+import { sanitizePhotoDataUrl, sanitizeStrokes, type AffiliateSignature } from "@/lib/signature";
+import { consumeHandoff } from "@/lib/handoff";
 import { buildRecord, type KnoxSignature } from "@/lib/agreement";
 import { requestTimestamp } from "@/lib/tsa";
 import { brandedEmail, publicUrl, sendMail } from "@/lib/mail";
@@ -89,13 +90,28 @@ export async function signAgreement(formData: FormData) {
   if (formData.get("accept") !== "on") back("Please tick the box to agree to the terms.");
   if (normName(String(formData.get("typedName") ?? "")) !== normName(state.name)) back("Type your full name exactly as you entered it.");
 
-  let strokes = null;
-  try {
-    strokes = sanitizeStrokes(JSON.parse(String(formData.get("strokes") ?? "[]")));
-  } catch {
-    strokes = null;
+  const sigMethod = String(formData.get("sigMethod") ?? "");
+  let signature: AffiliateSignature | null = null;
+  if (sigMethod === "drawn") {
+    let strokes = null;
+    try {
+      strokes = sanitizeStrokes(JSON.parse(String(formData.get("strokes") ?? "[]")));
+    } catch {
+      strokes = null;
+    }
+    if (!strokes) back("Please draw your signature in the box, or choose another way to sign.");
+    signature = { method: "drawn", strokes: strokes! };
+  } else if (sigMethod === "typed") {
+    signature = { method: "typed" };
+  } else if (sigMethod === "photo") {
+    const direct = sanitizePhotoDataUrl(formData.get("photo"));
+    if (direct) signature = { method: "photo", png: direct };
+    else if (!formData.get("handoff")) back("Please add your signature photo again.");
+  } else if (sigMethod === "none") {
+    signature = { method: "none" };
+  } else {
+    back("Please choose how to sign.");
   }
-  if (!strokes) back("Please draw your signature in the box.");
 
   const admin = adminClient();
   const { data: inv } = await admin
@@ -105,6 +121,12 @@ export async function signAgreement(formData: FormData) {
     .maybeSingle();
   if (!inv || inv.used_at || inv.revoked_at || new Date(inv.expires_at).getTime() < Date.now())
     back("This invitation is no longer valid. Ask Knoxified for a new one.");
+
+  if (!signature) {
+    const png = await consumeHandoff(String(formData.get("handoff") ?? ""), { inviteId: state.inviteId });
+    if (!png) back("That signature photo expired. Please add it again.");
+    signature = { method: "photo", png: png! };
+  }
 
   const email = state.email;
   const { data: existing } = await admin.rpc("portal_find_auth_user", { p_email: email });
@@ -150,7 +172,7 @@ export async function signAgreement(formData: FormData) {
       signedAt,
       ip,
       userAgent: ua,
-      affiliateStrokes: strokes!,
+      signature: signature!,
       knox,
     });
     const { error } = await admin.rpc("portal_onboard_partner", {
@@ -189,7 +211,9 @@ export async function signAgreement(formData: FormData) {
       preheader: "Welcome to the Knoxified affiliate program",
       title: `Welcome aboard, ${state.name!.split(" ")[0]}`,
       paragraphs: [
-        "Your agreement is signed and your affiliate account is live. Your referral link is waiting in your dashboard.",
+        signature!.method === "none"
+          ? "Your agreement is accepted and your affiliate account is live. Your referral link is waiting in your dashboard. You can add your signature image any time from there."
+          : "Your agreement is signed and your affiliate account is live. Your referral link is waiting in your dashboard.",
         "Attached is your signed agreement, its signing record, and an independent timestamp token. Keep them: anyone can use the fingerprint below to confirm the agreement has not changed.",
         stamp.ok ? "The independent timestamp was obtained successfully." : "The independent timestamp is being retried automatically and will be available in your dashboard shortly.",
       ],

@@ -97,6 +97,32 @@ export async function getAgreementMeta(partnerId: string): Promise<AgreementMeta
   return (data as AgreementMeta | null) ?? null;
 }
 
+export type SignatureStatus = { agreementId: string; pending: boolean; addendumAt: string | null };
+
+// "Pending" means the affiliate accepted the terms but has not added a signature image yet.
+// Agreements made before this feature always had a drawn signature.
+export async function getSignatureStatus(partnerId: string): Promise<SignatureStatus | null> {
+  const admin = adminClient();
+  const { data: a } = await admin
+    .from("partner_agreements")
+    .select("id, record_json")
+    .eq("partner_id", partnerId)
+    .order("signed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!a) return null;
+  const method = (a.record_json as { signing?: { signature_method?: string } } | null)?.signing?.signature_method ?? "drawn";
+  if (method !== "none") return { agreementId: a.id, pending: false, addendumAt: null };
+  const { data: ad } = await admin
+    .from("partner_signature_addenda")
+    .select("signed_at")
+    .eq("agreement_id", a.id)
+    .order("signed_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return { agreementId: a.id, pending: !ad, addendumAt: ad?.signed_at ?? null };
+}
+
 export type PayoutMeta = { currency: string; method: string; country: string | null; hint: string | null; updated_at: string };
 export async function getPayoutMeta(partnerId: string): Promise<PayoutMeta | null> {
   const { data } = await adminClient()

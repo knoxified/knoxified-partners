@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { canView, getViewer } from "@/lib/viewer";
-import { getAgreementMeta, getCustomers, getPartner, getPayments, getPayoutMeta, type PaymentRow } from "@/lib/data";
+import { getAgreementMeta, getSignatureStatus, getCustomers, getPartner, getPayments, getPayoutMeta, type PaymentRow } from "@/lib/data";
 import { milestones, nextGoal } from "@/lib/milestones";
 import { day, money, paymentStatus } from "@/lib/format";
 import { Pill, Section, Stat, TableCard } from "@/components/ui";
@@ -22,7 +22,7 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
   const isAdmin = viewer.role === "admin";
   const partner = await getPartner(id);
   if (!partner) notFound();
-  const [customers, payments, agreement, payout] = await Promise.all([getCustomers(id, isAdmin), getPayments(id), getAgreementMeta(id), getPayoutMeta(id)]);
+  const [customers, payments, agreement, payout, sig] = await Promise.all([getCustomers(id, isAdmin), getPayments(id), getAgreementMeta(id), getPayoutMeta(id), getSignatureStatus(id)]);
   const isOwner = viewer.role === "partner";
   const goal = nextGoal(partner);
   const badges = milestones(partner);
@@ -39,8 +39,19 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
         <div className="glow-border mb-6">
           <div className="glow-inner p-5">
             <div className="text-lg font-semibold">🎉 Welcome aboard, {partner.name.split(" ")[0]}. You&apos;re in.</div>
-            <p className="mt-1 text-sm text-slate-400">Your agreement is signed and your link is live below. Add your payout details so your first commission can be paid, and check your email for your signed copy.</p>
+            <p className="mt-1 text-sm text-slate-400">Your agreement is {sig?.pending ? "accepted" : "signed"} and your link is live below. Add your payout details so your first commission can be paid, and check your email for your signed copy.</p>
           </div>
+        </div>
+      )}
+
+
+      {sig?.pending && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-100">
+            <span className="font-semibold">Agreement accepted ✓ · Signature image missing.</span>{" "}
+            {isOwner ? "Add it to complete your record. It takes a minute." : `${partner.name} has not added a signature image yet.`}
+          </p>
+          {isOwner && <Link href={`/p/${id}/signature`} className="btn btn-primary !py-1.5">Add my signature</Link>}
         </div>
       )}
 
@@ -154,7 +165,7 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
         <Section title="Your agreement">
           <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
             <div className="text-sm text-slate-300">
-              Signed {day(agreement.signed_at)} · Terms version {agreement.terms_version}
+              {sig?.pending ? "Accepted" : "Signed"} {day(agreement.signed_at)} · Terms version {agreement.terms_version}
               <div className="mt-0.5 text-xs text-slate-500">Fingerprint {agreement.record_sha256.slice(0, 16)}… · Timestamp {agreement.tsa_status === "stamped" ? "verified" : "in progress"}</div>
             </div>
             <Link href={`/p/${id}/agreement`} className="btn btn-ghost">View and download</Link>

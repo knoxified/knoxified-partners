@@ -164,6 +164,19 @@ export async function handleTimestamps() {
       await admin.from("partner_agreements").update({ tsa_status: "failed" }).eq("id", row.id);
     }
   }
+  await handleAddendumTimestamps();
+}
+
+export async function handleAddendumTimestamps() {
+  const admin = adminClient();
+  const { data } = await admin.from("partner_signature_addenda").select("id, record_sha256").in("tsa_status", ["pending", "failed"]).limit(10);
+  for (const row of data ?? []) {
+    const r = await requestTimestamp(row.record_sha256);
+    await admin
+      .from("partner_signature_addenda")
+      .update(r.ok ? { tsa_status: "stamped", tsa_url: r.url, tsa_token_b64: r.tokenB64, tsa_stamped_at: new Date().toISOString() } : { tsa_status: "failed" })
+      .eq("id", row.id);
+  }
 }
 
 export async function sendPayoutEmail(partnerId: string, amount: number, currency: string, reference: string) {
