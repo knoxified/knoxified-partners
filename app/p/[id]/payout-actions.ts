@@ -5,6 +5,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getViewer } from "@/lib/viewer";
 import { rateAllowed } from "@/lib/otp";
 import { encryptPayout, maskHint, validatePayout } from "@/lib/payout";
+import { methodLabel } from "@/lib/payout-options";
 import { brandedEmail, publicUrl, sendMail } from "@/lib/mail";
 
 export type PayoutState = { ok?: boolean; error?: string };
@@ -18,7 +19,7 @@ export async function savePayout(_prev: PayoutState, formData: FormData): Promis
   if (!(await rateAllowed(`payout:${partnerId}`, 10, 3600))) return { error: "Too many changes. Please try again later." };
 
   const input: Record<string, string> = {};
-  for (const k of ["currency", "country", "method", "holder", "bank", "account", "swift", "notes"]) input[k] = String(formData.get(k) ?? "");
+  for (const k of ["currency", "country", "method", "holder", "bank", "account", "swift", "notes", "asset", "network", "card", "confirm"]) input[k] = String(formData.get(k) ?? "");
   const v = validatePayout(input);
   if (!v.ok) return { error: v.error };
 
@@ -29,8 +30,8 @@ export async function savePayout(_prev: PayoutState, formData: FormData): Promis
     currency: v.value.currency,
     method: v.value.method,
     country: v.value.country,
-    hint: maskHint(v.value.account),
-    ciphertext: await encryptPayout({ holder: v.value.holder, bank: v.value.bank, account: v.value.account, swift: v.value.swift, notes: v.value.notes }),
+    hint: maskHint(v.value.method, v.value.account),
+    ciphertext: await encryptPayout({ holder: v.value.holder, bank: v.value.bank, account: v.value.account, swift: v.value.swift, notes: v.value.notes, asset: v.value.asset, network: v.value.network, card: v.value.card }),
     updated_at: new Date().toISOString(),
     previous_updated_at: existing?.updated_at ?? null,
   });
@@ -38,7 +39,7 @@ export async function savePayout(_prev: PayoutState, formData: FormData): Promis
 
   await admin.from("audit_logs").insert({
     user_id: viewer.userId, action: "payout_details_updated", entity_type: "partner",
-    metadata: { partner_id: partnerId, currency: v.value.currency, country: v.value.country },
+    metadata: { partner_id: partnerId, method: v.value.method, currency: v.value.currency, country: v.value.country },
   });
 
   const { data: partner } = await admin.from("partners").select("name, email").eq("id", partnerId).maybeSingle();
@@ -46,13 +47,13 @@ export async function savePayout(_prev: PayoutState, formData: FormData): Promis
     const { html, text } = brandedEmail({
       title: "Your payout details were updated",
       paragraphs: [
-        `Your payout details (${v.value.currency}, account ending ${maskHint(v.value.account).slice(-4)}) were saved in your Knoxified Partners dashboard.`,
+        `Your payout details (${methodLabel(v.value.method)}, ${maskHint(v.value.method, v.value.account)}) were saved in your Knoxified Partners dashboard.`,
         "If this was not you, reply to this email straight away so we can hold your next payout.",
       ],
       cta: { label: "Open your dashboard", url: `${publicUrl()}/p/${partnerId}` },
     });
     await sendMail({ to: partner.email, toName: partner.name, subject: "Your payout details were updated", html, text, copyAdmin: true });
   }
-  revalidatePath(`/p/${partnerId}`);
+  revalidatePath(`/p/${partnerId}/payments`);
   return { ok: true };
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin, nextPayoutDate } from "@/lib/admin";
 import { adminClient } from "@/lib/supabase/admin";
 import { decryptPayout, type PayoutDetails } from "@/lib/payout";
+import { methodLabel } from "@/lib/payout-options";
 import { day, money } from "@/lib/format";
 import { Pill, Section, Stat, TableCard } from "@/components/ui";
 import { Shell } from "../../shell";
@@ -77,9 +78,12 @@ export default async function PayoutsPage({ searchParams }: { searchParams: Prom
                           {d.meta.currency} · {d.meta.country} {recent && <Pill tone="amber">Changed recently, verify</Pill>}
                         </summary>
                         <div className="mt-2 space-y-0.5 rounded-lg bg-slate-950/60 p-3 text-xs text-slate-300">
-                          <div>Holder: {d.value.holder}</div><div>Bank: {d.value.bank || "—"}</div>
-                          <div>Account / IBAN: <span className="font-mono">{d.value.account || "—"}</span></div>
-                          <div>SWIFT/BIC: {d.value.swift || "—"}</div>{d.value.notes && <div>Notes: {d.value.notes}</div>}
+                          <div>Method: {methodLabel(d.meta.method)}</div><div>Holder: {d.value.holder}</div>
+                          {d.meta.method === "bank_transfer" && <><div>Bank: {d.value.bank || "—"}</div><div>Account / IBAN: <span className="font-mono">{d.value.account || "—"}</span></div><div>SWIFT/BIC: {d.value.swift || "—"}</div></>}
+                          {d.meta.method === "paypal" && <div>PayPal email: <span className="font-mono">{d.value.account}</span></div>}
+                          {d.meta.method === "gift_card" && <><div>Card: {d.value.card}</div><div>Send to: <span className="font-mono">{d.value.account}</span></div></>}
+                          {d.meta.method === "crypto" && <><div>Coin: {d.value.asset} on {d.value.network}</div><div>Wallet: <span className="break-all font-mono">{d.value.account}</span></div></>}
+                          {d.value.notes && <div>Notes: {d.value.notes}</div>}
                           <div className="pt-1 text-slate-500">Updated {day(d.meta.updated_at)}</div>
                         </div>
                       </details>

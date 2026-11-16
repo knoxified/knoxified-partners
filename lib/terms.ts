@@ -2,8 +2,8 @@
 // public terms page on knoxified.org and the portal guide are all generated from this file.
 // Any change to the text changes TERMS_SHA256 and must come with a new TERMS_VERSION.
 
-export const TERMS_VERSION = "1.0";
-export const TERMS_DATE = "14 November 2026";
+export const TERMS_VERSION = "1.1";
+export const TERMS_DATE = "16 November 2026";
 export const NOTICE_EMAIL = "affiliates@knoxified.org";
 
 export type TermsSection = {
@@ -82,7 +82,9 @@ export const TERMS: TermsSection[] = [
       "Each Commission is held for the Hold Period (21 days) so that refunds and card disputes can be resolved first. When the Hold Period ends, the Commission becomes payable on the first Payout Date on or after that day.",
       "We pay on each Payout Date (the 15th of the month, or the next business day if the 15th is not one) the total of your payable Commissions, subject to a minimum payout of US$50. If your payable total is below US$50 it rolls forward to the next Payout Date.",
       "We pay in US dollars. If you choose a local currency and a payout method we support for your country, we can pay in that currency instead, converted at the rate our payout provider applies on the payout date. You choose your currency and enter your bank or other payout details in the Portal. You are responsible for keeping them accurate. If a transfer fails because of incorrect details, we will hold the amount until you correct them.",
-      "You pay the fees charged by the payout method and by your bank or provider, including currency conversion costs. We show any such fee on your statement. We pay our own account and platform costs.",
+      "We send you the full Commission shown in the Portal. We pay the fees our payout provider charges us to send your payout, up to 2% of the payout amount. If a method would cost more than that, we will ask you to choose another method instead of reducing your payout.",
+      "We do not control fees, charges or taxes that your own bank, wallet or payment provider, any intermediary bank, or your country apply to the money when it arrives. These can include receiving fees, SWIFT or intermediary bank charges, currency conversion and local levies, and they may show on your own statement after the money has entered your account. They are yours. Choosing PayPal, crypto or a local bank transfer instead of an international wire usually avoids most of them.",
+      "Crypto payouts are made only in the stablecoins USDT or USDC, on the networks the Portal lists. You must give a wallet address that you control and that matches the network you choose. We cannot recover funds sent to an address or network you entered incorrectly.",
       "We pay only to an account in your own name, or in the name of the business that signed the Order Form. We do not pay third parties.",
       "If we cannot pay you for 12 months because your details are missing or wrong and you do not respond after we email you, the unpaid Commission may be forfeited.",
     ],

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     try { v = await decryptPayout(d.ciphertext); } catch { continue; }
     rows.push({
       affiliate: r.name, email: r.email, country: d.country ?? "", payout_currency: d.currency, method: d.method,
-      account_holder: v.holder, bank: v.bank, account_or_iban: v.account, swift_bic: v.swift,
+      account_holder: v.holder, bank: v.bank, account_iban_email_or_wallet: v.account, swift_bic: v.swift, crypto_asset: v.asset ?? "", crypto_network: v.network ?? "", gift_card: v.card ?? "",
       amount_usd: Number(r.amount).toFixed(2),
       reference: `KNX-${date}-${String(r.partner_id).slice(0, 6).toUpperCase()}`, notes: v.notes,
     });
