@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { SignaturePicker, type PickerValue } from "@/components/signature-picker";
+import { ContractPreview } from "@/components/contract-preview";
 import { pollJoinHandoff, startJoinHandoff } from "./handoff-actions";
 
 function Submit({ ready, label }: { ready: boolean; label: string }) {
@@ -16,7 +17,9 @@ function Submit({ ready, label }: { ready: boolean; label: string }) {
 
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-export function SignForm({ action, name, children }: { action: (fd: FormData) => void | Promise<void>; name: string; children: React.ReactNode }) {
+export type KnoxPreview = { html: string; name: string; title: string };
+
+export function SignForm({ action, name, knox, lines, version, children }: { action: (fd: FormData) => void | Promise<void>; name: string; knox: KnoxPreview; lines: string[]; version: string; children: React.ReactNode }) {
   const form = useRef<HTMLFormElement>(null);
   const [stage, setStage] = useState<"read" | "sign">("read");
   const [accepted, setAccepted] = useState(false);
@@ -64,6 +67,11 @@ export function SignForm({ action, name, children }: { action: (fd: FormData) =>
             <h2 className="text-lg font-semibold">Add your signature</h2>
             <p className="mt-1 text-sm text-slate-400">Choose whichever is easiest. Any of them works.</p>
           </div>
+          <ContractPreview
+            heading="Affiliate Program Agreement"
+            intro={`Between Knoxified and ${name}. Version ${version}. You have read and accepted the full terms in the previous step. Your signature goes here.`}
+            lines={lines} partyName={name} knox={knox} value={value} skipped={skipped}
+          />
           <SignaturePicker name={name} start={startJoinHandoff} poll={pollJoinHandoff} onChange={setValue} />
           <div className="space-y-3">
             <Submit ready={value.ready && !skipped} label="Sign and join the program" />

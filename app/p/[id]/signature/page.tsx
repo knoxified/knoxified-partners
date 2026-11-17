@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { canView, getViewer } from "@/lib/viewer";
-import { getAgreementMeta, getSignatureStatus } from "@/lib/data";
+import { getAgreementMeta, getSetting, getSignatureStatus } from "@/lib/data";
+import { savedSignatureHtml, type SavedSignature } from "@/lib/signature";
+import { day } from "@/lib/format";
 import { Shell } from "../../../shell";
 import { AddendumForm } from "./form";
 
@@ -13,7 +15,7 @@ export default async function SignaturePage({ params, searchParams }: { params: 
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
   if (!canView(viewer, id) || viewer.role !== "partner") notFound();
-  const [sig, agreement] = await Promise.all([getSignatureStatus(id), getAgreementMeta(id)]);
+  const [sig, agreement, saved] = await Promise.all([getSignatureStatus(id), getAgreementMeta(id), getSetting<SavedSignature>("knoxified_signature")]);
   if (!sig || !agreement || !sig.pending) redirect(`/p/${id}`);
 
   return (
@@ -23,7 +25,13 @@ export default async function SignaturePage({ params, searchParams }: { params: 
       <p className="mt-2 max-w-2xl text-slate-400">Your agreement is already accepted. Adding a signature completes your record. It is saved as a signed, timestamped addendum, and the original agreement is never changed.</p>
       <div className="card mt-6 max-w-2xl p-5">
         {error && <p className="mb-5 rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</p>}
-        <AddendumForm partnerId={id} name={agreement.signer_name} />
+        <AddendumForm
+          partnerId={id}
+          name={agreement.signer_name}
+          knox={{ html: savedSignatureHtml(saved, "Knox Favour"), name: saved?.name || "Knox Favour", title: saved?.title || "Founder, Knoxified" }}
+          intro={`Addendum to the Affiliate Program Agreement you accepted on ${day(agreement.signed_at)} (terms version ${agreement.terms_version}). Your signature will be added to it here.`}
+          lines={["Adds your signature to the agreement you already accepted. It does not change the terms.", "Saved as its own signed record, fingerprinted with SHA-256 and timestamped independently."]}
+        />
       </div>
     </Shell>
   );

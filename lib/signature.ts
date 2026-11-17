@@ -81,3 +81,14 @@ export function sanitizePhotoDataUrl(input: unknown): string | null {
 export function photoToImg(png: string, height = 90): string {
   return `<img alt="Signature" height="${height}" style="height:${height}px;width:auto;max-width:100%" src="data:image/png;base64,${png}"/>`;
 }
+
+// Markup for a saved signature (Knox's own), for previews. Built only from validated data.
+export type SavedSignature = { name?: string; title?: string; strokes?: Stroke[] | null; png?: string | null };
+const escHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+export function savedSignatureHtml(saved: SavedSignature | null, fallbackName: string, height = 70): string {
+  const png = saved?.png ? sanitizePhotoB64(saved.png) : null;
+  if (png) return photoToImg(png, height);
+  const strokes = saved?.strokes ? sanitizeStrokes(saved.strokes) : null;
+  if (strokes) return strokesToSvg(strokes, height);
+  return `<span style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:30px">${escHtml(saved?.name || fallbackName)}</span>`;
+}

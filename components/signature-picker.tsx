@@ -12,6 +12,7 @@ export type PickerValue = {
   strokes?: Stroke[];
   photoDataUrl?: string; // photo taken or uploaded on this device
   handoff?: string; // photo that arrived from the phone (kept on the server)
+  preview?: string; // data URL of the photo, for showing it on the document
 };
 type Start = () => Promise<{ ok: true; token: string; url: string } | { ok: false; error: string }>;
 type Poll = (token: string) => Promise<{ status: "waiting" | "received" | "expired"; png?: string }>;
@@ -43,7 +44,7 @@ export function SignaturePicker({ name, start, poll, onChange, modes = ["draw", 
   useEffect(() => {
     if (mode === "draw") onChange({ method: "drawn", ready: points >= 20, strokes });
     else if (mode === "type") onChange({ method: "typed", ready: true });
-    else onChange({ method: "photo", ready: !!photo, photoDataUrl: photo?.dataUrl, handoff: photo?.handoff });
+    else onChange({ method: "photo", ready: !!photo, photoDataUrl: photo?.dataUrl, handoff: photo?.handoff, preview: photo?.preview });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, strokes, photo]);
 

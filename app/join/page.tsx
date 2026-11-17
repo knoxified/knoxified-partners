@@ -4,6 +4,9 @@ import { TermsView } from "@/components/terms-view";
 import { TERMS_DATE, TERMS_VERSION } from "@/lib/terms";
 import { editDetails, redeemCode, resendCode, saveDetails, signAgreement, verifyEmail } from "./actions";
 import { SignForm } from "./sign-form";
+import { adminClient } from "@/lib/supabase/admin";
+import { getSetting } from "@/lib/data";
+import { savedSignatureHtml, type SavedSignature } from "@/lib/signature";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Join the Knoxified affiliate program" };
@@ -81,19 +84,31 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
             </>
           )}
 
-          {step === 3 && state?.name && (
+          {step === 3 && state?.name && await (async () => {
+            const [{ data: inv }, saved] = await Promise.all([
+              adminClient().from("partner_invites").select("commission_rate, commission_rate_year2").eq("id", state.inviteId).maybeSingle(),
+              getSetting<SavedSignature>("knoxified_signature"),
+            ]);
+            const knox = { html: savedSignatureHtml(saved, "Knox Favour"), name: saved?.name || "Knox Favour", title: saved?.title || "Founder, Knoxified" };
+            const lines = [
+              inv ? `Commission: ${Number(inv.commission_rate)}% of net revenue in a customer's first year, ${Number(inv.commission_rate_year2)}% in the second.` : "Commission rates as set out in your Order Form.",
+              "Payouts are made on the 15th, from US$50, after a 21-day hold on each commission.",
+              "Signed electronically, fingerprinted with SHA-256 and timestamped by an independent authority.",
+            ];
+            return (
             <>
               <h1 className="text-2xl font-bold tracking-tight">Read and sign</h1>
               <p className="mt-2 text-sm text-slate-400">
                 Affiliate Program Terms, version {TERMS_VERSION} ({TERMS_DATE}). Knoxified has already signed. Scroll through the terms, then sign below.
               </p>
               <div className="mt-6">
-                <SignForm action={signAgreement} name={state.name}>
+                <SignForm action={signAgreement} name={state.name as string} knox={knox} lines={lines} version={TERMS_VERSION}>
                   <TermsView />
                 </SignForm>
               </div>
             </>
-          )}
+            );
+          })()}
         </div>
       </div>
     </main>
