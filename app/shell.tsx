@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminNav } from "@/components/admin-nav";
 
 export function Shell({ email, role, children }: { email: string; role: "admin" | "partner" | "none"; children: React.ReactNode }) {
   return (
@@ -9,7 +10,7 @@ export function Shell({ email, role, children }: { email: string; role: "admin" 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="" className="h-8 w-8 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-opacity group-hover:opacity-100" />
             <span className="text-xl font-bold tracking-tight text-slate-50">Knoxified</span>
-            <span className="rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-xs font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-400/25">
+            <span className="hidden rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-xs font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-400/25 min-[400px]:inline">
               {role === "admin" ? "Admin console" : "Partners"}
             </span>
           </Link>
@@ -25,6 +26,7 @@ export function Shell({ email, role, children }: { email: string; role: "admin" 
             <button className="btn btn-ghost !py-1.5">Sign out</button>
           </form>
         </div>
+        {role === "admin" && <AdminNav />}
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">

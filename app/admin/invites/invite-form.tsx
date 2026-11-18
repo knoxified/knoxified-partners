@@ -12,14 +12,13 @@ export function InviteForm() {
 
   return (
     <div className="space-y-4">
-      <form action={action} className="grid gap-3 sm:grid-cols-5">
-        <input name="label" placeholder="Who is this for? (private note)" className="input sm:col-span-2" />
-        <input name="rate1" type="number" step="0.5" min="0" max="100" defaultValue={30} className="input" title="Year one rate %" />
-        <input name="rate2" type="number" step="0.5" min="0" max="100" defaultValue={20} className="input" title="Year two rate %" />
-        <input name="days" type="number" min="1" max="60" defaultValue={14} className="input" title="Valid for days" />
-        <button disabled={pending} className="btn btn-primary sm:col-span-5">{pending ? "Creating…" : "Create invitation code"}</button>
+      <form action={action} className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+        <div className="col-span-3 sm:col-span-2"><label className="mb-1.5 block text-xs font-medium text-slate-400">Who is this for? (private note)</label><input name="label" className="input" /></div>
+        <div><label className="mb-1.5 block text-xs font-medium text-slate-400">Year 1 %</label><input name="rate1" type="number" inputMode="decimal" step="0.5" min="0" max="100" defaultValue={30} className="input" /></div>
+        <div><label className="mb-1.5 block text-xs font-medium text-slate-400">Year 2 %</label><input name="rate2" type="number" inputMode="decimal" step="0.5" min="0" max="100" defaultValue={20} className="input" /></div>
+        <div><label className="mb-1.5 block text-xs font-medium text-slate-400">Valid days</label><input name="days" type="number" inputMode="numeric" min="1" max="60" defaultValue={14} className="input" /></div>
+        <button disabled={pending} className="btn btn-primary col-span-3 sm:col-span-5">{pending ? "Creating…" : "Create invitation code"}</button>
       </form>
-      <p className="text-xs text-slate-500">Fields: private note, year-one rate %, year-two rate %, days the code stays valid.</p>
       {state.error && <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{state.error}</p>}
       {state.code && (
         <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/5 p-4">
