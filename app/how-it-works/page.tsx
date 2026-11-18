@@ -33,8 +33,8 @@ export default function HowItWorks() {
 
       <h2 className="mt-10 text-xl font-semibold tracking-tight">What you earn</h2>
       <div className="card mt-3 p-5 text-sm text-slate-300">
-        <p>Commission is a percentage of net revenue (the payment minus processing fees, excluding taxes and refunds). The standard rates are <b className="text-slate-50">30% in a customer&apos;s first year</b> and <b className="text-slate-50">20% in the second year</b>. Your own rates are on your Order Form.</p>
-        <p className="mt-3"><b className="text-slate-50">Example.</b> A customer&apos;s first payment is US$348.50 and fees are US$11.00. Net revenue is US$337.50, so you earn US$101.25. If they pay US$697.00 next month with US$21.00 in fees, you earn 30% of US$676.00, which is US$202.80.</p>
+        <p>Commission is a percentage of what the customer actually pays (before payment processing fees, which we cover, and excluding taxes and refunds). The standard rates are <b className="text-slate-50">30% in a customer&apos;s first year</b> and <b className="text-slate-50">20% in the second year</b>. Your own rates are on your Order Form.</p>
+        <p className="mt-3"><b className="text-slate-50">Example.</b> A customer&apos;s first payment is US$348.50 because of the sign-up offer, so you earn 30% of that, US$104.55. If they pay the full US$697.00 next month, you earn US$209.10.</p>
         <p className="mt-3"><b className="text-slate-50">When.</b> A payment on 20 November is held until 11 December and paid on 15 December. A payment on 25 November is held until 16 December and paid on 15 January.</p>
       </div>
 

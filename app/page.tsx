@@ -83,7 +83,7 @@ export default async function HomePage() {
           )}
         </tbody>
       </TableCard>
-      <p className="mt-4 text-xs text-slate-500">Commission is calculated on the net amount after payment fees.</p>
+      <p className="mt-4 text-xs text-slate-500">Commission is calculated on what the customer pays, before payment fees.</p>
     </Shell>
   );
 }

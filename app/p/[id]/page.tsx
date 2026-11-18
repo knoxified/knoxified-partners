@@ -102,7 +102,7 @@ export default async function PartnerOverview({ params, searchParams }: { params
 
       {agreement && (
         <p className="text-xs text-slate-500">
-          Agreement {sig?.pending ? "accepted" : "signed"} {day(agreement.signed_at)} · <Link href={`/p/${id}/agreement`} className="text-cyan-400 hover:underline">view and download</Link>. Amounts are in {cur}. Commission is calculated on net revenue after payment fees. Refunded or disputed payments are removed before payout.
+          Agreement {sig?.pending ? "accepted" : "signed"} {day(agreement.signed_at)} · <Link href={`/p/${id}/agreement`} className="text-cyan-400 hover:underline">view and download</Link>. Amounts are in {cur}. Commission is calculated on what the customer pays, before payment fees. Refunded or disputed payments are removed before payout.
         </p>
       )}
     </PartnerFrame>
