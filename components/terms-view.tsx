@@ -22,7 +22,7 @@ export function TermsView() {
   return (
     <div className="text-sm leading-relaxed text-slate-300">
       {TERMS.map((s, si) => (
-        <section key={s.id}>
+        <section key={s.id} id={s.id} className="scroll-mt-24">
           <h3 className="mt-6 text-base font-semibold text-slate-50">
             {si + 1}. {s.title}
           </h3>

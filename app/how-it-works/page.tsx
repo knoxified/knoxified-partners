@@ -52,10 +52,10 @@ export default function HowItWorks() {
           ["Can I see who signed up?", "Yes, by business name, location and plan. Owner names and emails stay private."],
           ["Can I get paid in my own currency?", "Yes. Choose your currency and add your bank details in your dashboard."],
           ["What if a customer is refunded?", "The commission for that payment is cancelled before payout, and deducted from your next payout if already paid."],
-          ["Where is the full agreement?", "In your dashboard after you sign, with a fingerprint and an independent timestamp. The standard text is at knoxified.org/legal/affiliate-terms."],
+          ["Where is the full agreement?", "In your dashboard after you sign, with a fingerprint and an independent timestamp. The full standard text is public, no login needed, on the Terms page."],
         ].map(([q, a]) => (<div key={q} className="p-4"><div className="font-medium text-slate-100">{q}</div><p className="mt-1 text-slate-400">{a}</p></div>))}
       </div>
-      <p className="mt-8 text-center text-sm text-slate-500">Questions? Email affiliates@knoxified.org · <Link href="/join" className="text-cyan-400 hover:underline">Join the program</Link></p>
+      <p className="mt-8 text-center text-sm text-slate-500">Questions? Email affiliates@knoxified.org · <Link href="/terms" className="text-cyan-400 hover:underline">Read the full terms</Link> · <Link href="/join" className="text-cyan-400 hover:underline">Join the program</Link></p>
     </main>
   );
 }
